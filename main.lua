@@ -11,6 +11,9 @@ require "character"
 math.randomseed(os.time())
 math.random() math.random() math.random()
 
+love.mouse.setGrabbed(true)
+love.mouse.setVisible(false)
+
 local player = Player()
 player.weapon = Dagger(player)
 
@@ -21,6 +24,10 @@ enemy.weapon = Weapons[math.random(#Weapons)](player)
 local pongGame = Pong(player, enemy)
 
 function love.update(dt)
+	if love.keyboard.isDown("escape") then
+		love.event.quit()
+	end
+
 	pongGame:update(dt)
 end
 

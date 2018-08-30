@@ -34,9 +34,19 @@ function Paddle:update(dt)
 end
 
 function Paddle:draw()
+	local goalPos = self.controller.goalPos or self.AABB.position.y
+	love.graphics.push()
+		local r, g, b = love.graphics.getColor()
+		love.graphics.setColor(.2, .2, .2)
+		print()
+		love.graphics.translate(0, goalPos - self.AABB.position.y)
+		self.AABB:draw()
+		love.graphics.setColor(r, g, b)
+	love.graphics.pop()
+
 	if self.state:parent() == SwingState then
 		local r, g, b = love.graphics.getColor()
-		love.graphics.setColor(255, 0, 0)
+		love.graphics.setColor(1, 0, 0)
 		self.AABB:draw()
 		love.graphics.setColor(r, g, b)
 	elseif self.state:parent() == RecoveryState then

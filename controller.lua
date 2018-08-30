@@ -20,7 +20,8 @@ PlayerController = Controller()
 
 function PlayerController:getGoalPosition(dt)
 	local mouseYtoGame = love.mouse.getY() / love.graphics.getHeight()
-	return self:constrainGoalPosition(mouseYtoGame)
+	self.goalPos = self:constrainGoalPosition(mouseYtoGame)
+	return self.goalPos
 end
 
 function PlayerController:isStriking()
