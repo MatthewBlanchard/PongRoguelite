@@ -88,10 +88,14 @@ function AIController:predictGoalPosTime()
 
 	local t = 0
 	local ht = 0
-	local dt = 1/1000
+	local dt = 1/10000
 	while not (comp(position.y, self.predictedGoalPos) == self.predictedGoalPos) do
-		position.y = position.y + velocity * dt
+		local paddleHalfPos = comp(position.y + extent * dir, self.predictedGoalPos)
+		if ht == 0 and paddleHalfPos == self.predictedGoalPos then
+			ht = t + dt
+		end
 
+		position.y = position.y + velocity * dt
 
 		local moveDelta = direction(goalPos, self.predictedGoalPos) * self.adjustStep * dt
 		moveDelta = clampMagnitude(moveDelta, distance(goalPos, self.predictedGoalPos))
@@ -109,16 +113,9 @@ function AIController:predictGoalPosTime()
 		local accel = force/mass
 
 		velocity = velocity + accel  * dt
-		t = t + dt
-
-		local paddleHalfPos = comp(position.y - extent * dir, self.predictedGoalPos)
-		if ht == 0 and paddleHalfPos == self.predictedGoalPos then
-			ht = t
-		end
-
+		t = t+dt
 	end
 
-	print(t, ht)
 	return t, ht
 end
 
@@ -131,26 +128,14 @@ function AIController:getGoalPosition(dt)
 			self.predictedTimeToGoalPos = ttgp
 			self.predictedTimeToGoalPosHalf = ttgph
 		end
+
 	elseif self.predicted then
 		self.predicted = false
 		self.hasStruck = false
 	end
 
-	local springTightness = self.paddle.springTightness
-	local springDamping = self.paddle.springDamping
-
-	local springAccel = springDamper(
-		springTightness, distance(self.goalPos, self.predictedGoalPos),
-		springDamping, 0
-
-	) / self.paddle.mass
-
-	local springTime = distance(self.goalPos, self.predictedGoalPos)/ springAccel 
-
-	local halfttgp = self.predictedTimeToGoalPos - self.predictedTimeToGoalPosHalf
-	local fuzz = math.random() * halfttgp
-	local waitTime = self.predictedTimeToGoalPosHalf
-	if self:getTimeToPaddle() - waitTime > self:getTimeToGoalPos() then
+	local waitTime = self.predictedTimeToGoalPos
+	if self:getTimeToPaddle() > self.predictedTimeToGoalPos then
 		return self.goalPos
 	end
 
@@ -193,8 +178,9 @@ function AIController:getTimeToGoalPos()
 end
 
 function AIController:getTimeToPaddle()
-	local paddleXPos = self.paddle.AABB.position.x
-	local ballXPos = self.game.ball.AABB.position.x
+	local dir = -direction(0, self.game.ball.velocity.x)
+	local paddleXPos = self.paddle.AABB.position.x + self.paddle.AABB.halfExtents.x*dir
+	local ballXPos = self.game.ball.AABB.position.x - self.game.ball.AABB.halfExtents.x*dir
 	local ballXVelocity = self.game.ball.velocity.x
 	local ballPaddlePosDiff = paddleXPos - ballXPos
 	local ttp = math.abs(ballPaddlePosDiff/ballXVelocity)

@@ -21,6 +21,7 @@ Pong.waitLabel = Label(font, {
 
 function Pong:__new(lcharacter, rcharacter)
 	self.paddles = {}
+	self.time = 0
 
 	table.insert(self.paddles, lcharacter:getPaddle(self))
 	table.insert(self.paddles, rcharacter:getPaddle(self))
@@ -67,8 +68,8 @@ function Pong:waitingState(dt)
 end
 
 function Pong:playingState(dt)
-	for i = 1, 1000 do
-		t = dt / 1000
+	for i = 1, 10 do
+		t = dt / 10
 
 		self.ball:update(t)
 
@@ -134,8 +135,7 @@ end
 function Ball:integrate(dt)
 	local pos = self.AABB.position
 
-	local t = self.returns/30 * dt
-	local moveVector = Vector(self.velocity.x * t, self.velocity.y * t)
+	local moveVector = Vector(self.velocity.x * dt, self.velocity.y * dt)
 	self.AABB:move(moveVector)
 
 	for k, paddle in pairs(self.game.paddles) do
@@ -154,7 +154,6 @@ function Ball:integrate(dt)
 		pos.y = self.game.fieldSize.y/2
 		self.velocity.x = self.speed
 		self.velocity.y = 0
-		self.returns = 30
 		self.lasthit = nil
 	end
 end
@@ -165,7 +164,6 @@ function Ball:handleCollisions(paddle)
 	if not (self.lasthit == paddle) and collided then
 		paddle.state:hitResponse(self)
 		self.lasthit = paddle
-		self.returns = self.returns + 1
 	end
 end
 
@@ -184,6 +182,8 @@ function Ball:recursiveCheckCollision(paddle)
 				end
 			end
 		end
+
+		return false
 	else
 		return true
 	end

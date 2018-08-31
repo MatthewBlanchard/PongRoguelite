@@ -28,7 +28,7 @@ end
 function Paddle:draw()
 	local goalPos = self.controller.goalPos or self.AABB.position.y
 		
-	if false then
+	if self.controller.predictedGoalPos then
 		love.graphics.push()
 			local r, g, b = love.graphics.getColor()
 			love.graphics.setColor(.1, 0, 0)
