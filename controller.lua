@@ -37,6 +37,7 @@ AIController.error = .4
 AIController.delay = .2
 AIController.delayTimer = 0
 AIController.predicted = false
+AIController.adjustStep = 1
 
 function AIController:predictBallPosition()
 	-- I know this looks like crap but I think it's slightly more readable this
@@ -73,20 +74,87 @@ function AIController:predictBallPosition()
 	return self:constrainGoalPosition(ballYPos, self.paddle)
 end
 
-local adjustStep = 1
+function AIController:predictGoalPosTime()
+	local springTightness = self.paddle.springTightness
+	local springDamping = self.paddle.springDamping
+	local mass = self.paddle.mass
+	local position = Vector(self.paddle.AABB.position.x, self.paddle.AABB.position.y)
+	local extent = self.paddle.AABB.halfExtents.y
+	local velocity = self.paddle.velocity
+	local goalPos = self.goalPos
+
+	local dir = direction(self.predictedGoalPos, position.y)
+	local comp = dir == 1 and math.max or math.min
+
+	local t = 0
+	local ht = 0
+	local dt = 1/1000
+	while not (comp(position.y, self.predictedGoalPos) == self.predictedGoalPos) do
+		position.y = position.y + velocity * dt
+
+
+		local moveDelta = direction(goalPos, self.predictedGoalPos) * self.adjustStep * dt
+		moveDelta = clampMagnitude(moveDelta, distance(goalPos, self.predictedGoalPos))
+
+		goalPos = goalPos + moveDelta
+		local moveDelta = position.y - goalPos
+		local moveDir = sign(moveDelta)
+
+		local vel = velocity * moveDir
+
+		force = springDamper(
+			springTightness, math.abs(moveDelta),
+			springDamping, vel
+		) * moveDir
+		local accel = force/mass
+
+		velocity = velocity + accel  * dt
+		t = t + dt
+
+		local paddleHalfPos = comp(position.y - extent * dir, self.predictedGoalPos)
+		if ht == 0 and paddleHalfPos == self.predictedGoalPos then
+			ht = t
+		end
+
+	end
+
+	print(t, ht)
+	return t, ht
+end
+
 function AIController:getGoalPosition(dt)
 	if self:getTimeToPaddle() > 0 then
 		if not self.predicted then
 			self.predicted = true
 			self.predictedGoalPos = self:predictBallPosition()
+			local ttgp, ttgph = self:predictGoalPosTime()
+			self.predictedTimeToGoalPos = ttgp
+			self.predictedTimeToGoalPosHalf = ttgph
 		end
 	elseif self.predicted then
 		self.predicted = false
 		self.hasStruck = false
 	end
 
+	local springTightness = self.paddle.springTightness
+	local springDamping = self.paddle.springDamping
 
-	local moveDelta = direction(self.goalPos, self.predictedGoalPos) * adjustStep * dt
+	local springAccel = springDamper(
+		springTightness, distance(self.goalPos, self.predictedGoalPos),
+		springDamping, 0
+
+	) / self.paddle.mass
+
+	local springTime = distance(self.goalPos, self.predictedGoalPos)/ springAccel 
+
+	local halfttgp = self.predictedTimeToGoalPos - self.predictedTimeToGoalPosHalf
+	local fuzz = math.random() * halfttgp
+	local waitTime = self.predictedTimeToGoalPosHalf
+	if self:getTimeToPaddle() - waitTime > self:getTimeToGoalPos() then
+		return self.goalPos
+	end
+
+	local moveDelta = direction(self.goalPos, self.predictedGoalPos) * self.adjustStep * dt
 	moveDelta = clampMagnitude(moveDelta, distance(self.goalPos, self.predictedGoalPos))
 	self.goalPos = self.goalPos + moveDelta
 	return self.goalPos
@@ -118,6 +186,10 @@ function AIController:isStriking(dt)
 	end
 
 	return false
+end
+
+function AIController:getTimeToGoalPos()
+	return math.abs((self.goalPos - self.predictedGoalPos)/self.adjustStep)
 end
 
 function AIController:getTimeToPaddle()

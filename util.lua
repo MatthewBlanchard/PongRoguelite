@@ -35,3 +35,11 @@ function timer(threshold)
 		end
 	end
 end
+
+function springDamper(k, x, b, v)
+	return -k*x - b * v
+end
+
+function springDamperCollide(k, x, b, v, n)
+	return n * k * x - b * n * v
+end

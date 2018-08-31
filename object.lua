@@ -9,19 +9,12 @@ end
 function Object:__new()
 end
 
--- Static Methods
-function Object.__cast(o, m)
-	setmetatable(o, m)
-	m.__index = m
-	m.__call = Object.__call
-
-	return o
-end
-
 -- Methods
 function Object:new(...)
     local o = {}
-   	Object.__cast(o, self)
+   	setmetatable(o, self)
+	self.__index = self
+	self.__call = Object.__call
 
     o:__new(...)
     return o

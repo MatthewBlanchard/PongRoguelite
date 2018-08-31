@@ -1,11 +1,3 @@
-local function springDamper(k, x, b, v)
-	return -k*x - b * v
-end
-
-local function springDamperCollide(k, x, b, v, n)
-	return n * k * x - b * n * v
-end
-
 Paddle = Object()
 
 function Paddle:__new(game, controller, AABB, strength, mass, k, b, swin, srec)
@@ -35,10 +27,20 @@ end
 
 function Paddle:draw()
 	local goalPos = self.controller.goalPos or self.AABB.position.y
+		
+	if false then
+		love.graphics.push()
+			local r, g, b = love.graphics.getColor()
+			love.graphics.setColor(.1, 0, 0)
+			love.graphics.translate(0, self.controller.predictedGoalPos - self.AABB.position.y)
+			self.AABB:draw()
+			love.graphics.setColor(r, g, b)
+		love.graphics.pop()
+	end
+
 	love.graphics.push()
 		local r, g, b = love.graphics.getColor()
-		love.graphics.setColor(.2, .2, .2)
-		print()
+		love.graphics.setColor(.1, .1, .1)
 		love.graphics.translate(0, goalPos - self.AABB.position.y)
 		self.AABB:draw()
 		love.graphics.setColor(r, g, b)
@@ -78,19 +80,19 @@ function Paddle:integrate(dt, velMul)
 		paddle.velocity = paddle.velocity + springDamperCollide(
 			self.springTightness*10, depth,
 			.5, vel,
-			-1
+			moveDir
 		) / self.mass * dt
 	elseif pos.y - paddle.AABB.halfExtents.y < 0 then
 		local depth = distance(0, pos.y - paddle.AABB.halfExtents.y)
 
-		local moveDelta = 0 - pos.y + paddle.AABB.halfExtents.y
+		local moveDelta = 0 - (pos.y - paddle.AABB.halfExtents.y)
 		local moveDir = sign(moveDelta)
 		local vel = self.velocity * moveDir
 
 		paddle.velocity = paddle.velocity + springDamperCollide(
 			self.springTightness*10, depth,
 			.5, vel,
-			1
+			moveDir
 		) / self.mass * dt
 	end
 end

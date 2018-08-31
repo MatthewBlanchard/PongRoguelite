@@ -79,11 +79,11 @@ Dagger = Weapon()
 function Dagger:__new()
 	self.name = "Dagger"
 	self.mass = 1
-	self.length = 1/10
+	self.length = 1/8
 	self.springTightness = 150
 	self.springDamping = 10
 
-	self.strikeMultiplier = 4
+	self.strikeMultiplier = 2
 	self.strikeWindow = .1
 	self.strikeRecoveryTime = .15
 end
