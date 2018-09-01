@@ -86,7 +86,7 @@ function Pong:scored(ball)
 		local controller = paddle.controller:parent()
 
 		paddle:__new(
-			self, controller(self), paddle.AABB, paddle.strength,
+			self, controller(self, paddle.controller.character), paddle.AABB, paddle.strength,
 			paddle.mass, paddle.springTightness, paddle.springDamping,
 			paddle.strikeWindow, paddle.strikeRecovery
 		)
@@ -104,7 +104,9 @@ function Ball:__new(game, AABB)
 	self.AABB = AABB
 	self.velocity = Vector(self.speed, 0)
 	self.time = 1
-	self.returns = 30
+
+	self.returns = 0
+	self.returnSpeedup = 1/30
 
 	local pos = AABB.position
 	local size = AABB.halfExtents
@@ -154,6 +156,7 @@ function Ball:integrate(dt)
 		pos.y = self.game.fieldSize.y/2
 		self.velocity.x = self.speed
 		self.velocity.y = 0
+		self.returns = 0
 		self.lasthit = nil
 	end
 end
@@ -162,8 +165,13 @@ function Ball:handleCollisions(paddle)
 	local collided = self:recursiveCheckCollision(paddle)
 
 	if not (self.lasthit == paddle) and collided then
-		paddle.state:hitResponse(self)
+		self.velocity = paddle:hit(self)
 		self.lasthit = paddle
+
+		local returnDir = sign(self.velocity.x)
+		self.returns = self.returns + 1
+		self.velocity.x = self.velocity.x + self.returns * self.returnSpeedup * returnDir
+		self.velocity.y = self.velocity.y
 	end
 end
 

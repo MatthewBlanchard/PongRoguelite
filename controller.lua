@@ -1,7 +1,8 @@
 Controller = Object()
 
-function Controller:__new(game)
+function Controller:__new(game, character)
 	self.game = game
+	self.character = character
 end
 
 function Controller:isStriking()
@@ -30,14 +31,14 @@ end
 
 AIController = Controller()
 
-AIController.goalPos = .5
-AIController.predictedGoalPos = .5
-AIController.goalPos = .5
-AIController.error = .4
-AIController.delay = .2
-AIController.delayTimer = 0
-AIController.predicted = false
-AIController.adjustStep = 1
+function AIController:__new(game, character)
+	Controller.__new(self, game, character)
+	self.goalPos = .5
+	self.predictedGoalPos = .5
+	self.goalPos = .5
+	self.predicted = false
+	self.state = AIController.waitState
+end
 
 function AIController:predictBallPosition()
 	-- I know this looks like crap but I think it's slightly more readable this
@@ -88,7 +89,7 @@ function AIController:predictGoalPosTime()
 
 	local t = 0
 	local ht = 0
-	local dt = 1/10000
+	local dt = 1/100
 	while not (comp(position.y, self.predictedGoalPos) == self.predictedGoalPos) do
 		local paddleHalfPos = comp(position.y + extent * dir, self.predictedGoalPos)
 		if ht == 0 and paddleHalfPos == self.predictedGoalPos then
@@ -97,7 +98,7 @@ function AIController:predictGoalPosTime()
 
 		position.y = position.y + velocity * dt
 
-		local moveDelta = direction(goalPos, self.predictedGoalPos) * self.adjustStep * dt
+		local moveDelta = direction(goalPos, self.predictedGoalPos) * self.character.trackSpeed * dt
 		moveDelta = clampMagnitude(moveDelta, distance(goalPos, self.predictedGoalPos))
 
 		goalPos = goalPos + moveDelta
@@ -116,7 +117,7 @@ function AIController:predictGoalPosTime()
 		t = t+dt
 	end
 
-	return t, ht
+	return t
 end
 
 function AIController:getGoalPosition(dt)
@@ -124,22 +125,40 @@ function AIController:getGoalPosition(dt)
 		if not self.predicted then
 			self.predicted = true
 			self.predictedGoalPos = self:predictBallPosition()
-			local ttgp, ttgph = self:predictGoalPosTime()
-			self.predictedTimeToGoalPos = ttgp
-			self.predictedTimeToGoalPosHalf = ttgph
 		end
-
 	elseif self.predicted then
 		self.predicted = false
 		self.hasStruck = false
 	end
 
-	local waitTime = self.predictedTimeToGoalPos
-	if self:getTimeToPaddle() > self.predictedTimeToGoalPos then
-		return self.goalPos
+	return self.state(self, dt)
+end
+
+function AIController:onHit(ball)
+	self.state = self.waitState
+end
+
+function AIController:waitState(dt)
+
+	if not self.waitActivity then
+		self.waitActivity = self.character.waitActivity(self.paddle.AABB.position.y)
 	end
 
-	local moveDelta = direction(self.goalPos, self.predictedGoalPos) * self.adjustStep * dt
+	self.predictedTimeToGoalPos = self:predictGoalPosTime()
+	self.goalPos = self:constrainGoalPosition(self.waitActivity(dt))
+	
+	if self:getTimeToPaddle() < self:predictGoalPosTime() and self:getTimeToPaddle() > 0 then
+		print(self:getTimeToPaddle(), self.predictedTimeToGoalPos)
+		self.state = self.seekState
+		self.waitActivity = nil
+		return self:seekState(dt)
+	else
+		return self.goalPos
+	end
+end
+
+function AIController:seekState(dt)
+	local moveDelta = direction(self.goalPos, self.predictedGoalPos) * self.character.trackSpeed * dt
 	moveDelta = clampMagnitude(moveDelta, distance(self.goalPos, self.predictedGoalPos))
 	self.goalPos = self.goalPos + moveDelta
 	return self.goalPos
@@ -163,7 +182,7 @@ function AIController:isStriking(dt)
 
 	if not self.strikeDelay and self.willStrike and not self.hasStruck and ttp > 0 then
 		self.hasStruck = true
-		self.strikeTimer = timer(randBiDirectional()*.05 + ttp-.2)
+		self.strikeTimer = timer(randBiDirectional()*.05 + ttp)
 	elseif self.strikeTimer and self.strikeTimer(dt) then
 		self.strikeTimer = nil
 		self.willStrike = nil
@@ -174,7 +193,7 @@ function AIController:isStriking(dt)
 end
 
 function AIController:getTimeToGoalPos()
-	return math.abs((self.goalPos - self.predictedGoalPos)/self.adjustStep)
+	return math.abs((self.goalPos - self.predictedGoalPos)/self.character.trackSpeed)
 end
 
 function AIController:getTimeToPaddle()

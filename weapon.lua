@@ -17,6 +17,7 @@ function Weapon:__new()
 end
 
 function Weapon:generatePaddle(game, character)
+	print(character)
 	local paddlePosition
 	if character.isPlayer then
 		paddlePosition = Vector(0.1, 0.5)
@@ -26,10 +27,9 @@ function Weapon:generatePaddle(game, character)
 
 	local paddleExtent = Vector(0.02, self.length/2)
 	local paddleAABB = AABB(paddlePosition, paddleExtent)
-	print(paddleAABB.position.x)
 
 	local paddle = Paddle(
-		game, character.controller(game), paddleAABB,
+		game, character.controller(game, character), paddleAABB,
 		self.strikeMultiplier, self.mass, self.springTightness, self.springDamping,
 		self.strikeWindow, self.strikeRecoveryTime
 	)
@@ -51,7 +51,7 @@ function ShortSword:__new()
 	self.springTightness = 100
 	self.springDamping = 10
 
-	self.strikeMultiplier = 1
+	self.strikeMultiplier = 1.5
 	self.strikeWindow = .2
 	self.strikeRecoveryTime = .3
 end

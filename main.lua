@@ -15,10 +15,10 @@ love.mouse.setGrabbed(true)
 love.mouse.setVisible(false)
 
 local player = Player()
-player.weapon = Dagger(player)
+player.weapon = Weapons[math.random(#Weapons)](player)
 
 local enemy = Character()
-enemy.weapon = Weapons[math.random(#Weapons)](player)
+enemy.weapon = Weapons[math.random(#Weapons)](enemy)
 
 
 local pongGame = Pong(player, enemy)

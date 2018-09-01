@@ -28,24 +28,16 @@ end
 function Paddle:draw()
 	local goalPos = self.controller.goalPos or self.AABB.position.y
 		
-	if self.controller.predictedGoalPos then
+	if self.controller:parent() == PlayerController then
 		love.graphics.push()
 			local r, g, b = love.graphics.getColor()
-			love.graphics.setColor(.1, 0, 0)
-			love.graphics.translate(0, self.controller.predictedGoalPos - self.AABB.position.y)
+			love.graphics.setColor(.1, .1, .1)
+			love.graphics.translate(0, goalPos - self.AABB.position.y)
 			self.AABB:draw()
 			love.graphics.setColor(r, g, b)
 		love.graphics.pop()
 	end
-
-	love.graphics.push()
-		local r, g, b = love.graphics.getColor()
-		love.graphics.setColor(.1, .1, .1)
-		love.graphics.translate(0, goalPos - self.AABB.position.y)
-		self.AABB:draw()
-		love.graphics.setColor(r, g, b)
-	love.graphics.pop()
-
+	
 	if self.state:parent() == SwingState then
 		local r, g, b = love.graphics.getColor()
 		love.graphics.setColor(1, 0, 0)
@@ -115,6 +107,14 @@ function Paddle:getAcceleration(dt)
 	return force/self.mass
 end
 
+function Paddle:hit(ball)
+	if self.controller.onHit then
+		self.controller:onHit(ball)
+	end
+
+	return self.state:hitResponse(ball)
+end
+
 DefaultState = Object()
 
 function DefaultState:__new(paddle)
@@ -137,8 +137,7 @@ function DefaultState:hitResponse(ball)
 	local pos = paddle.AABB.position
 	local moveDirX = ball.velocity.x > 0 and -1 or 1
 	local moveDirY = pos.y - paddle.goalPos > 0 and -1 or 1
-	ball.velocity.x = moveDirX * ball.speed
-	ball.velocity.y = clamp(paddle.velocity, -ball.speed, ball.speed)
+	return Vector(moveDirX, clamp(paddle.velocity, -1, 1))
 end
 
 
@@ -165,8 +164,8 @@ function SwingState:hitResponse(ball)
 	local paddle = self.paddle
 	local pos = paddle.AABB.position
 	local moveDirX = ball.velocity.x > 0 and -1 or 1
-	ball.velocity.x = moveDirX * paddle.strength
-	ball.velocity.y = clamp(paddle.velocity, -ball.speed, ball.speed)
+
+	return Vector(moveDirX * paddle.strength, clamp(paddle.velocity, -1, 1))
 end
 
 RecoveryState = Object()
@@ -192,6 +191,5 @@ function RecoveryState:hitResponse(ball)
 	local paddle = self.paddle
 	local pos = paddle.AABB.position
 	local moveDirX = ball.velocity.x > 0 and -1 or 1
-	ball.velocity.x = moveDirX * ball.speed
-	ball.velocity.y = clamp(paddle.velocity, -ball.speed, ball.speed)
+	return Vector(moveDirX, clamp(paddle.velocity, -1, 1))
 end
