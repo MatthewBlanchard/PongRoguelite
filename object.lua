@@ -20,8 +20,17 @@ function Object:new(...)
     return o
 end
 
-function Object:parent()
-	return getmetatable(self)
+function Object:is(o)
+	local parent = getmetatable(self)
+	while parent do
+		if parent == o then
+			return true
+		end
+
+		parent = getmetatable(parent)
+	end
+
+	return false
 end
 
 return Object:new()

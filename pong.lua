@@ -19,9 +19,24 @@ Pong.waitLabel = Label(font, {
 	"to play!."
 }, Vector(width/2, 0))
 
+Pong.backgroundImage = love.graphics.newImage("background.png")
+
+Pong.backgroundQuad = love.graphics.newQuad(
+	0, 0, love.graphics.getWidth(), love.graphics.getHeight(),
+	Pong.backgroundImage:getDimensions()
+)
+
+Pong.backgroundImage:setWrap("repeat", "repeat")
+
 function Pong:__new(lcharacter, rcharacter)
 	self.paddles = {}
-	self.time = 0
+	self.characters = {}
+
+	self.hitstopTime = 0
+	self.mouseDelta = Vector(0, 0)
+
+	table.insert(self.characters, lcharacter)
+	table.insert(self.characters, rcharacter)
 
 	table.insert(self.paddles, lcharacter:getPaddle(self))
 	table.insert(self.paddles, rcharacter:getPaddle(self))
@@ -34,6 +49,7 @@ end
 
 function Pong:draw()
 
+	--love.graphics.draw(Pong.backgroundImage, Pong.backgroundQuad)
 	if self.state == self.waitingState then
 		self.waitLabel:draw()
 	end
@@ -50,10 +66,39 @@ function Pong:draw()
 end
 
 function Pong:update(dt)
+	if self.hitstopTime > 0 then
+		self.hitstopTime = self.hitstopTime - dt
+		return
+	end
+
 	self:state(dt)
+	self.mouseDelta.x, self.mouseDelta.y = 0, 0
+end
+
+function Pong:hitStop(dt)
+	self.hitstopTime = dt
+end
+
+function Pong:mousemoved(dx, dy)
+	for i, paddle in pairs(self.paddles) do
+		if paddle.controller.mousemoved then
+			paddle.controller:mousemoved(dx, dy)
+		end
+	end
+end
+
+function Pong:scored(ball)
+	self.state = self.waitingState
+	self.paddles = {}
+
+	for k, char in pairs(self.characters) do
+		table.insert(self.paddles, char:getPaddle(self))
+	end
 end
 
 function Pong:waitingState(dt)
+	self.ball.velocity.x = 0
+
 	for i = 1, 1000 do
 		t = dt / 1000
 
@@ -63,6 +108,7 @@ function Pong:waitingState(dt)
 	end
 
 	if love.keyboard.isDown("space") then
+		self.ball.velocity.x = .5
 		self.state = self.playingState
 	end
 end
@@ -79,36 +125,20 @@ function Pong:playingState(dt)
 	end
 end
 
-function Pong:scored(ball)
-	self.state = self.waitingState
-
-	for k, paddle in pairs(self.paddles) do
-		local controller = paddle.controller:parent()
-
-		paddle:__new(
-			self, controller(self, paddle.controller.character), paddle.AABB, paddle.strength,
-			paddle.mass, paddle.springTightness, paddle.springDamping,
-			paddle.strikeWindow, paddle.strikeRecovery
-		)
-	end
-end
-
-Ball = Object()
+Ball = GameObject()
 
 -- Width/height of the ball constant
 Ball.size = .01
 Ball.speed = 1
 
 function Ball:__new(game, AABB)
-	self.game = game
-	self.AABB = AABB
-	self.velocity = Vector(self.speed, 0)
+	GameObject.__new(self, game, AABB)
+	self:setVelocity(Vector(self.speed, 0))
 	self.time = 1
 
 	self.returns = 0
 	self.returnSpeedup = 1/30
 
-	local pos = AABB.position
 	local size = AABB.halfExtents
 	self.mesh = love.graphics.newMesh( 
 		{
@@ -133,6 +163,10 @@ function Ball:draw()
 	love.graphics.pop()
 end
 
+
+function Ball:update(dt)
+	self:integrate(dt)
+end
 
 function Ball:integrate(dt)
 	local pos = self.AABB.position
@@ -164,9 +198,9 @@ end
 function Ball:handleCollisions(paddle)
 	local collided = self:recursiveCheckCollision(paddle)
 
-	if not (self.lasthit == paddle) and collided then
-		self.velocity = paddle:hit(self)
-		self.lasthit = paddle
+	if not (self.lasthit == paddle.owner) and collided then
+		self.velocity = collided:onHit(self)
+		self.lasthit = paddle.owner
 
 		local returnDir = sign(self.velocity.x)
 		self.returns = self.returns + 1
@@ -176,27 +210,21 @@ function Ball:handleCollisions(paddle)
 end
 
 function Ball:recursiveCheckCollision(paddle)
-	local collided = self.AABB:overlaps(paddle.AABB)
+	local collided = self:checkCollision(paddle)
 
 	if not collided then
 		local curpaddle = paddle
 
-		while curpaddle.children do
-			for k, paddle in pairs(paddle.children) do
-				if self.AABB:overlaps(curpaddle.AABB) then
-					return true
-				else
-					return ball:recursiveCheckCollision()
-				end
+		for k, child in pairs(paddle.children) do
+			if self:checkCollision(child) then
+				return child
+			else
+				return self:recursiveCheckCollision(child)
 			end
 		end
 
 		return false
 	else
-		return true
+		return paddle
 	end
-end
-
-function Ball:update(dt)
-	self:integrate(dt)
 end

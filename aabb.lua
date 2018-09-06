@@ -12,7 +12,7 @@ end
 function AABB:draw()
 	local pos = self.position
 	local size = self.halfExtents
-	love.graphics.rectangle("fill", pos.x-size.x, pos.y-size.y, size.x*2, size.y*2)
+	love.graphics.rectangle("fill", -size.x, -size.y, size.x*2, size.y*2)
 end
 
 function AABB:move(toMove)

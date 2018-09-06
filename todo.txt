@@ -1,0 +1,8 @@
+TODO:
+
+Fix striking so that AI doesn't consistently miss the ball when doing it.
+Finish and polish throwing. -- Done for player
+Add hit response to paddles (hitstop + angular response) -- Hitstop added.
+Add a background.
+Add lighting to the paddles and ball that affects the background.
+Add paddle and ball graphics.

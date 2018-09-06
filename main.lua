@@ -3,6 +3,7 @@ Object = require "object"
 font = love.graphics.newFont("Alkhemikal.ttf", 24)
 
 require "ui/label"
+require "gameobject"
 require "util"
 require "pong"
 require "weapon"
@@ -14,14 +15,24 @@ math.random() math.random() math.random()
 love.mouse.setGrabbed(true)
 love.mouse.setVisible(false)
 
-local player = Player()
-player.weapon = Weapons[math.random(#Weapons)](player)
+local pongGame
+function love.load()
+	love.mouse.setRelativeMode(true)
 
-local enemy = Character()
-enemy.weapon = Weapons[math.random(#Weapons)](enemy)
+	local player = Player()
+	player.weapon = ThrowingWeapon(player)
+	player.controller = ThrowingPlayerController
 
+	local enemy = Goblin()
+	enemy.weapon = ThrowingWeapon(enemy)
+	enemy.controller = ThrowingAIController
 
-local pongGame = Pong(player, enemy)
+	pongGame = Pong(player, enemy)
+end
+
+function love.mousemoved(x, y, dx, dy)
+	pongGame:mousemoved(dx, dy)
+end
 
 function love.update(dt)
 	if love.keyboard.isDown("escape") then

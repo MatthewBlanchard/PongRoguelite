@@ -2,7 +2,16 @@ local function fidget(startPos)
 	local time = 0
 	return function(dt)
 		time = time + dt
-		return startPos + math.sin(time*3)/15
+		return math.sin(time*5)/100
+	end
+end
+
+local function wander(startPos)
+	local time = 0
+	local direction = direction(0, randBiDirectional())
+	return function(dt)
+		time = time + dt
+		return startPos + direction * time
 	end
 end
 
@@ -15,12 +24,11 @@ function Character:__new()
 	self.name = "Unknown"
 	self.HP = 1
 
-	self.waitActivity = fidget
+	self.waitActivity = wander
 	self.trackSpeed = 1
 end
 
 function Character:getPaddle(game)
-	print(self)
 	return self.weapon:generatePaddle(game, self)
 end
 
@@ -28,6 +36,7 @@ Player = Character()
 
 function Player:__new()
 	Character.__new(self)
+
 	self.name = "Player"
 	self.isPlayer = true
 	self.controller = PlayerController
@@ -39,26 +48,29 @@ end
 
 Goblin = Character()
 
-function Goblin:new()
+function Goblin:__new()
 	Character.__new(self)
 
+	self.controller = DualAIController
 	self.name = "Goblin"
 	self.HP = 1
 
-	self.weapon = Dagger()
+	self.weapon = DualWeapon()
+	self.waitActivity = fidget
 	self.trackSpeed = 2
 end
 
 Ogre = Character()
 
-function Ogre:new()
+function Ogre:__new()
 	Character.__new(self)
 
 	self.name = "Ogre"
-	self.HP = 1
+	self.HP = 3
 
 	self.weapon = Greatsword()
-	self.trackSpeed = 1
+	self.waitActivity = wander
+	self.trackSpeed = .75
 end
 
 
