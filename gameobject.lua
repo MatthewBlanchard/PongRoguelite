@@ -3,7 +3,7 @@ GameObject = Object()
 function GameObject:__new(game, AABB)
 	self.game = game
 	self.AABB = AABB
-	self.velocity = Vector(0, 0)
+	self.velocity = Vector2(0, 0)
 	self.rotation = 0
 
 	self.children = {}
@@ -13,6 +13,11 @@ function GameObject:update()
 end
 
 function GameObject:draw()
+end
+
+function GameObject:addChild(child)
+	table.insert(self.children, child)
+	child.parent = self
 end
 
 function GameObject:getPosition()
@@ -53,10 +58,10 @@ function GameObject:getSize()
 
 	local points = {}
 
-	table.insert(points, Vector(size.x, size.y))
-	table.insert(points, Vector(-size.x, size.y))
-	table.insert(points, Vector(size.x, -size.y))
-	table.insert(points, Vector(-size.x, -size.y))
+	table.insert(points, Vector2(size.x, size.y))
+	table.insert(points, Vector2(-size.x, size.y))
+	table.insert(points, Vector2(size.x, -size.y))
+	table.insert(points, Vector2(-size.x, -size.y))
 
 	for i, point in pairs(points) do
 		rX = point.x * math.cos(rot) - point.y * math.sin(rot)
@@ -66,7 +71,7 @@ function GameObject:getSize()
 		mY = math.max(math.abs(rY), mY)
 	end
 
-	return Vector(mX, mY)
+	return Vector2(mX, mY)
 end
 
 function GameObject:checkCollision(gameObject)

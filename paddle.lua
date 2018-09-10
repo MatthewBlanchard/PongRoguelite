@@ -7,6 +7,7 @@ function Paddle:__new(game, AABB, strength, mass, k, b, swin, srec)
 		self.defaultX = AABB.position.x
 	end
 
+	self.color = {r = 1, g = 1, b = 1}
 	self.strength = strength
 	self.strikeWindow = swin
 	self.strikeRecovery = srec
@@ -19,11 +20,6 @@ function Paddle:__new(game, AABB, strength, mass, k, b, swin, srec)
 	self.strikeState = StrikeState
 	self.recoveryState = RecoveryState
 	self.state = self.defaultState(self)
-end
-
-function Paddle:setController(controller)
-	self.controller = controller
-	self.controller.paddle = self
 end
 
 function Paddle:update(dt)
@@ -49,15 +45,15 @@ function Paddle:draw()
 			love.graphics.setColor(r, g, b)
 		love.graphics.pop()
 	
+	local r, g, b = love.graphics.getColor()
 	if self.state:is(StrikeState) then
-		local r, g, b = love.graphics.getColor()
 		love.graphics.setColor(1, 0, 0)
 	elseif self.state:is(RecoveryState) then
-		local r, g, b = love.graphics.getColor()
 		love.graphics.setColor(.2, .2, .2)
+	else
+		love.graphics.setColor(self.color.r, self.color.g, self.color.b)
 	end
 
-	local moveDir = direction(0, self.velocity.x)
 	love.graphics.push()
 		love.graphics.translate(self.AABB.position.x, self.AABB.position.y)
 		love.graphics.rotate(self.rotation)
@@ -71,6 +67,15 @@ function Paddle:draw()
 	for k, child in pairs(self.children) do
 		child:draw(dt)
 	end
+end
+
+function Paddle:setController(controller)
+	self.controller = controller
+	self.controller.paddle = self
+end
+
+function Paddle:setColor(color)
+	self.color = color
 end
 
 function Paddle:integrate(dt, velMul)
@@ -158,7 +163,7 @@ function PaddleState:hitResponse(ball)
 	local pos = paddle.AABB.position
 	local moveDirX = ball.velocity.x > 0 and -1 or 1
 	local moveDirY = pos.y - paddle.goalPos > 0 and -1 or 1
-	return Vector(moveDirX, clamp(paddle.velocity.y, -1, 1))
+	return Vector2(moveDirX, clamp(paddle.velocity.y, -1, 1))
 end
 
 DefaultState = PaddleState()
@@ -200,7 +205,7 @@ function StrikeState:hitResponse(ball)
 	local pos = paddle.AABB.position
 	local moveDirX = ball.velocity.x > 0 and -1 or 1
 
-	return Vector(moveDirX * paddle.strength, clamp(paddle.velocity.y, -1, 1))
+	return Vector2(moveDirX * paddle.strength, clamp(paddle.velocity.y, -1, 1))
 end
 
 RecoveryState = PaddleState()
@@ -347,7 +352,7 @@ function ThrowingStrikeState:hitResponse(ball)
 	local pos = paddle.AABB.position
 	local moveDirX = ball.velocity.x > 0 and -1 or 1
 
-	return Vector(moveDirX * paddle.strength, clamp(paddle.velocity.y, -1, 1))
+	return Vector2(moveDirX * paddle.strength, clamp(paddle.velocity.y, -1, 1))
 end
 
 ThrowingRecoveryState = RecoveryState()
@@ -410,5 +415,5 @@ function BowStrikeState:hitResponse(ball)
 	local pos = paddle.AABB.position
 	local moveDirX = ball.velocity.x > 0 and -1 or 1
 
-	return Vector(moveDirX * paddle.strength, clamp(paddle.velocity.y, -1, 1))
+	return Vector2(moveDirX * paddle.strength, clamp(paddle.velocity.y, -1, 1))
 end

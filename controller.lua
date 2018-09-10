@@ -125,7 +125,7 @@ function AIController:predictGoalPosTime()
 	local springTightness = self.paddle.springTightness
 	local springDamping = self.paddle.springDamping
 	local mass = self.paddle.mass
-	local position = Vector(self.paddle.AABB.position.x, self.paddle.AABB.position.y)
+	local position = Vector2(self.paddle.AABB.position.x, self.paddle.AABB.position.y)
 	local extent = self.paddle.AABB.halfExtents.y
 	local velocity = self.paddle.velocity.y
 	local goalPos = self.goalPos
@@ -269,6 +269,37 @@ function AIController:isBallIncoming(dt)
 	return sign(self.game.ball.velocity.x) == sign(paddleSide)
 end
 
+FollowerAIController = AIController()
+
+function FollowerAIController:__new(game, character)
+	AIController:__new(game, character)
+	self.following = false
+	self.decidedFollowing = false
+end
+
+function FollowerAIController:getGoalPosition(dt)
+	if self:getTimeToPaddle() > 0 and not self.decidedFollowing then
+		self.following = math.random() > 0.5
+		self.decidedFollowing = true
+	elseif self:getTimeToPaddle() < 0 then
+		self.decidedFollowing = false
+	end
+
+	if self.following then
+		local moveDelta = direction(self.goalPos, self.game.ball:getPosition().y) * self.character.trackSpeed * dt
+		moveDelta = clampMagnitude(moveDelta, distance(self.goalPos, self.game.ball:getPosition().y))
+		self.goalPos = self.goalPos + moveDelta
+		return self.goalPos
+	else
+		return self.goalPos
+	end
+end
+
+
+function FollowerAIController:isStriking(dt)
+	return false
+end
+
 DualAIController = AIController()
 
 function DualAIController:__new(game, character)
@@ -403,8 +434,6 @@ function ThrowingAIController:isStriking(dt)
 		--print(paddleYPosAtApexHeight, ballYPosAtApexHeight, ballTimeToApexHeight, timeToApex)
 	end
 
-	print(ballYPosAtApexHeight)
-	print("dist", distance(ballYPosAtApexHeight, paddleYPosAtApexHeight))
 	if 	ballTimeToApexHeight < timeToApex and
 		distance(ballYPosAtApexHeight, paddleYPosAtApexHeight) < self.paddle.AABB.halfExtents.y and
 		self:getTimeToPaddle() > 0 

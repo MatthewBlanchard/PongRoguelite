@@ -29,7 +29,14 @@ function Character:__new()
 end
 
 function Character:getPaddle(game)
-	return self.weapon:generatePaddle(game, self)
+	local paddle = self.weapon:generatePaddle(game, self)
+
+	if self.follower then
+		print "YA"
+		paddle:addChild(self.follower:getPaddle(game))
+	end
+
+	return paddle
 end
 
 Player = Character()
@@ -42,6 +49,22 @@ function Player:__new()
 	self.controller = PlayerController
 
 	self.HP = 3
+end
+
+-- Followers
+
+LoyalHound = Character()
+
+function LoyalHound:__new()
+	Character.__new(self)
+
+	self.name = "Loyal Hound"
+	self.isFollower = true
+	self.controller = FollowerAIController
+	self.HP = 1
+
+	self.weapon = Paws()
+	self.trackSpeed = .75
 end
 
 -- HERE BE MONSTERS

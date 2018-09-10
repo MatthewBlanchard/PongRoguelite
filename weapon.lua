@@ -16,15 +16,23 @@ function Weapon:__new()
 	self.paddleType = Paddle
 end
 
-function Weapon:generatePaddle(game, character)
-	local paddlePosition
-	if character.isPlayer then
-		paddlePosition = Vector(0.1, 0.5)
-	else
-		paddlePosition = Vector(game.fieldSize.x - 0.1, 0.5)
-	end
+function Weapon:getPaddlePosition(game, character)
+	if character.isPlayer or character.isFollower then
+		local paddlePosition = Vector2(0.1, 0.5)
 
-	local paddleExtent = Vector(0.02, self.length/2)
+		if character.isFollower then
+			paddlePosition.x = 0.05 - 0.02
+		end
+
+		return paddlePosition
+	else
+		return Vector2(game.fieldSize.x - 0.1, 0.5)
+	end
+end
+function Weapon:generatePaddle(game, character)
+	local paddlePosition = self:getPaddlePosition(game, character)
+
+	local paddleExtent = Vector2(0.02, self.length/2)
 	local paddleAABB = AABB(paddlePosition, paddleExtent)
 
 	local paddle = self.paddleType(
@@ -35,20 +43,20 @@ function Weapon:generatePaddle(game, character)
 	paddle:setController(character.controller(game, character))
 	paddle.owner = character
 	self.paddle = paddle
+
+	if self.color then
+		paddle:setColor(self.color)
+	end
+
 	return paddle
 end
 
 DualWeapon = Weapon()
 
 function DualWeapon:generatePaddle(game, character)
-	local paddlePosition
-	if character.isPlayer then
-		paddlePosition = Vector(0.1, 0.25)
-	else
-		paddlePosition = Vector(game.fieldSize.x - 0.1, 0.25)
-	end
+	local paddlePosition = self:getPaddlePosition(game, character)
 
-	local paddleExtent = Vector(0.02, self.length/2)
+	local paddleExtent = Vector2(0.02, self.length/2)
 	local paddleAABB = AABB(paddlePosition, paddleExtent)
 
 	local paddle = self.paddleType(
@@ -57,7 +65,7 @@ function DualWeapon:generatePaddle(game, character)
 		self.strikeWindow, self.strikeRecoveryTime
 	)
 	paddle:setController(character.controller(game, character))
-	paddlePosition = Vector(paddlePosition.x, .75)
+	paddlePosition = Vector2(paddlePosition.x, .75)
 	paddleAABB = AABB(paddlePosition, paddleExtent)
 
 	local secondPaddle = self.paddleType(
@@ -88,14 +96,9 @@ function ThrowingWeapon:__new()
 end
 
 function ThrowingWeapon:generatePaddle(game, character)
-	local paddlePosition
-	if character.isPlayer then
-		paddlePosition = Vector(0.1, 0.5)
-	else
-		paddlePosition = Vector(game.fieldSize.x - 0.1, 0.5)
-	end
+	local paddlePosition = self:getPaddlePosition(game, character)
 
-	local paddleExtent = Vector(0.02, self.length/2)
+	local paddleExtent = Vector2(0.02, self.length/2)
 	local paddleAABB = AABB(paddlePosition, paddleExtent)
 
 	local paddle = self.paddleType(
@@ -161,3 +164,17 @@ function Dagger:__new()
 end
 
 table.insert(Weapons, Dagger)
+
+-- Follower specific weapons
+
+Paws = Weapon()
+
+function Paws:__new()
+	self.name = "Loyal Hound's Paws"
+	self.color = {r = 153/255/2, g = 107/255/2, b =55/255/2
+}
+	self.mass = 2
+	self.length = 1/8
+	self.springTightness = 70
+	self.springDamping = 6
+end

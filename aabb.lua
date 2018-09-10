@@ -2,7 +2,7 @@ AABB = Object()
 
 function AABB:__new(position, halfExtents)
 	if type(halfExtents) == "number" then
-		halfExtents = Vector(halfExtents, halfExtents)
+		halfExtents = Vector2(halfExtents, halfExtents)
 	end
 
 	self.position = position

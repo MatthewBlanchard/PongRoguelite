@@ -5,6 +5,7 @@ font = love.graphics.newFont("Alkhemikal.ttf", 24)
 require "ui/label"
 require "gameobject"
 require "util"
+require "drenderer"
 require "pong"
 require "weapon"
 require "character"
@@ -18,10 +19,14 @@ love.mouse.setVisible(false)
 local pongGame
 function love.load()
 	love.mouse.setRelativeMode(true)
+	love.graphics.setDefaultFilter("nearest", "nearest")
 
 	local player = Player()
 	player.weapon = ThrowingWeapon(player)
 	player.controller = ThrowingPlayerController
+
+	local hound = LoyalHound()
+	player.follower = hound
 
 	local enemy = Goblin()
 	enemy.weapon = ThrowingWeapon(enemy)

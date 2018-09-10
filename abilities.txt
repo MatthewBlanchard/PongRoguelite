@@ -1,0 +1,47 @@
+Passive
+
+	Assassin's Cloak 
+		
+		Your strike multiplier is increased based on how light your weapon is. 
+
+	Crown of Madness
+
+		The ball's speed increases faster than normal.
+
+	Gauntlet's Of Strength
+
+		Your weapons feel lighter in your hands. (Decrease weapon mass.)
+
+	Loyal Mutt
+
+		A small paddle sits behind yours and follows the ball. (Has limited HP.
+
+	Crowd of Peasants
+
+		A group of simpleminded club wielded peasants jostle for the ball behind you)
+
+Paddles
+
+	Elven Blade (short sword)
+
+		Your strikes become stronger based on how quickly your blade is moving.
+
+	Stone Crusher (hammer)
+
+		Your strikes become stronger based on how slowly your hammer is moving.
+
+	Twin Blades of the A'san (dual daggers)
+
+		Your strike multiplier increases each time you strike with one blade and then the next.
+
+
+
+Paddles Types
+
+	Bow
+
+		You click to take aim and release to send a bolt that skewers the ball.
+
+	Grappling Hook
+
+		You click to take aim and release a hook that grabs the ball and returns it to your paddle.

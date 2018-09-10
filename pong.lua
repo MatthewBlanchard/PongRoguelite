@@ -7,7 +7,7 @@ Pong = Object()
 
 -- Field size constants. The smallest dimension of the field
 -- should always be 1.
-Pong.fieldSize = Vector(1.77, 1)
+Pong.fieldSize = Vector2(1.77, 1)
 
 local width, height = love.graphics.getDimensions()
 Pong.waitLabel = Label(font, {
@@ -17,23 +17,30 @@ Pong.waitLabel = Label(font, {
 	"space ",
 	{1, 1, 1,},
 	"to play!."
-}, Vector(width/2, 0))
-
-Pong.backgroundImage = love.graphics.newImage("background.png")
-
-Pong.backgroundQuad = love.graphics.newQuad(
-	0, 0, love.graphics.getWidth(), love.graphics.getHeight(),
-	Pong.backgroundImage:getDimensions()
-)
-
-Pong.backgroundImage:setWrap("repeat", "repeat")
+}, Vector2(width/2, 0))
 
 function Pong:__new(lcharacter, rcharacter)
 	self.paddles = {}
 	self.characters = {}
 
 	self.hitstopTime = 0
-	self.mouseDelta = Vector(0, 0)
+	self.mouseDelta = Vector2(0, 0)
+
+	self.renderer = DRenderer()
+
+	self.background = DDrawable("wallalbedo.png", "wallnormal.png")
+	self.background.albedo:setWrap("repeat")
+	self.background.normal:setWrap("repeat")
+
+	self.background.quad = love.graphics.newQuad(
+	0, 0, love.graphics.getWidth(), love.graphics.getHeight(),
+	self.background.albedo:getDimensions())
+
+	self.backgroundLight = DDirectionalLight(Vector3(4, 4, 1), Color(244/512, 232/512, 66/512))
+	self.backgroundLight2 = DDirectionalLight(Vector3(-4, -4, 1), Color(66/512, 206/512, 244/512))
+
+	self.ballLightFlicker = flicker(Color(221/255, 115/255, 22/255), .1, .3) 
+	self.ballLight = DPointLight(Vector3(0, 0, 100), Color(1, 1, 1))
 
 	table.insert(self.characters, lcharacter)
 	table.insert(self.characters, rcharacter)
@@ -41,18 +48,33 @@ function Pong:__new(lcharacter, rcharacter)
 	table.insert(self.paddles, lcharacter:getPaddle(self))
 	table.insert(self.paddles, rcharacter:getPaddle(self))
 
-	local ballOrigin = Vector(self.fieldSize.x/2, self.fieldSize.y/2)
+	local ballOrigin = Vector2(self.fieldSize.x/2, self.fieldSize.y/2)
 	self.ball = Ball(self, AABB(ballOrigin, Ball.size))
 
 	self.state = self.waitingState
 end
 
 function Pong:draw()
-
-	--love.graphics.draw(Pong.backgroundImage, Pong.backgroundQuad)
 	if self.state == self.waitingState then
 		self.waitLabel:draw()
 	end
+
+
+	love.graphics.push()
+		love.graphics.scale(2)
+		self.ballLight.position.x = self.ball:getPosition().x * width/self.fieldSize.x
+		self.ballLight.position.y = self.ball:getPosition().y * height
+
+		self.renderer:beginGBuffer()
+			self.renderer:draw(self.background)
+		self.renderer:endGBuffer()
+
+		self.renderer:startLighting()
+			self.renderer:drawLight(self.backgroundLight)
+			self.renderer:drawLight(self.backgroundLight2)
+			self.renderer:drawLight(self.ballLight)
+		self.renderer:endLighting()
+	love.graphics.pop()
 
 	love.graphics.push()
 		love.graphics.scale(width/self.fieldSize.x, height/self.fieldSize.y)
@@ -66,6 +88,8 @@ function Pong:draw()
 end
 
 function Pong:update(dt)
+	self.ballLight.color = self.ballLightFlicker(dt)
+
 	if self.hitstopTime > 0 then
 		self.hitstopTime = self.hitstopTime - dt
 		return
@@ -133,7 +157,7 @@ Ball.speed = 1
 
 function Ball:__new(game, AABB)
 	GameObject.__new(self, game, AABB)
-	self:setVelocity(Vector(self.speed, 0))
+	self:setVelocity(Vector2(self.speed, 0))
 	self.time = 1
 
 	self.returns = 0
@@ -171,8 +195,8 @@ end
 function Ball:integrate(dt)
 	local pos = self.AABB.position
 
-	local moveVector = Vector(self.velocity.x * dt, self.velocity.y * dt)
-	self.AABB:move(moveVector)
+	local moveVector2 = Vector2(self.velocity.x * dt, self.velocity.y * dt)
+	self.AABB:move(moveVector2)
 
 	for k, paddle in pairs(self.game.paddles) do
 		self:handleCollisions(paddle)
@@ -226,5 +250,23 @@ function Ball:recursiveCheckCollision(paddle)
 		return false
 	else
 		return paddle
+	end
+end
+
+function flicker(baseColor, period, intensity)
+	local t = 0
+	local color = Color(baseColor.r, baseColor.g, baseColor.b)
+	return function(dt)
+		t = t + dt
+
+		if t > period then
+			t = 0
+			local r = 1 - randBiDirectional() * intensity
+			color.r = baseColor.r * r
+			color.g = baseColor.g * r
+			color.b = baseColor.b * r
+		end
+
+		return color
 	end
 end
